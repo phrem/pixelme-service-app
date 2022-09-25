@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Put,
   Param,
   Delete,
@@ -19,10 +18,44 @@ import { CoreapiService } from './coreapi.service';
 import { Response } from 'express';
 import { Express } from 'express';
 import { AuthGuard } from '@nestjs/passport';
+import { threadId } from 'worker_threads';
 
 @Controller('api')
 export class CoreapiController {
   constructor(private readonly coreapiService: CoreapiService) {}
+
+  @Get('all')
+  @UseGuards(AuthGuard('api-key'))
+  async getAll(@Res() res: Response) {
+    const images = await this.coreapiService.getAll();
+    if (images) {
+      res.status(HttpStatus.OK).send(images);
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('This image out of service.');
+    }
+  }
+
+  @Get('pagination/skip/:skip/take/:take')
+  @UseGuards(AuthGuard('api-key'))
+  async getPagination(
+    @Res() res: Response,
+    @Param('skip') skip: string,
+    @Param('take') take: string,
+  ) {
+    const images = await this.coreapiService.getPagination(
+      parseInt(skip),
+      parseInt(take),
+    );
+    if (images) {
+      res.status(HttpStatus.OK).send(images);
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('This image out of service.');
+    }
+  }
 
   @Post('upload')
   @UseGuards(AuthGuard('api-key'))
@@ -137,6 +170,19 @@ export class CoreapiController {
       resdelete.push(result);
     }
     res.status(HttpStatus.OK).send(resdelete);
+  }
+
+  @Delete('delete/all')
+  @UseGuards(AuthGuard('api-key'))
+  async deleteAllFile(@Res() res: Response) {
+    const deleteall = await this.coreapiService.deleteAll();
+    if (deleteall) {
+      res.status(HttpStatus.OK).send('SUCCESS');
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('Something wrong please try again.');
+    }
   }
 
   @Put('update')

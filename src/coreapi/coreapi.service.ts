@@ -50,6 +50,44 @@ export class CoreapiService {
     }
   }
 
+  async getAll(): Promise<any> {
+    try {
+      const images = await this.prisma.pixelMeImage.findMany({
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+      if (images) {
+        return images;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async getPagination(skip: number, take: number): Promise<any> {
+    try {
+      const images = await this.prisma.pixelMeImage.findMany({
+        skip: skip,
+        take: take,
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+      if (images) {
+        return images;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
   async updateImage(imagedata: any) {
     try {
       const updateimage = await this.prisma.pixelMeImage.update({
@@ -78,8 +116,21 @@ export class CoreapiService {
           fileName: filename,
         },
       });
-      // return deleteimage;
       if (deleteimage) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  async deleteAll(): Promise<any> {
+    try {
+      const deleteall = await this.prisma.pixelMeImage.deleteMany({});
+      if (deleteall) {
         return true;
       } else {
         return false;
