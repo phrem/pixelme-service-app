@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UploadedFiles,
   UseGuards,
+  StreamableFile,
 } from '@nestjs/common';
 import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { CoreapiService } from './coreapi.service';
@@ -19,6 +20,9 @@ import { Response } from 'express';
 import { Express } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { threadId } from 'worker_threads';
+import { createReadStream } from 'fs';
+import * as fs from 'fs';
+import * as Jimp from 'jimp';
 
 @Controller('api')
 export class CoreapiController {
@@ -124,25 +128,6 @@ export class CoreapiController {
     }
   }
 
-  @Get('image/:filename')
-  async previewImage(
-    @Res() res: Response,
-    @Param('filename') filename: string,
-  ) {
-    const imagedata = await this.coreapiService.getImage(filename);
-    if (imagedata) {
-      const buffer = Buffer.from(imagedata.image, 'base64');
-
-      const base64Image =
-        'data:' + res.header['content-type'] + ';base64,' + buffer;
-      res.send(base64Image);
-    } else {
-      res
-        .status(HttpStatus.EXPECTATION_FAILED)
-        .send('This image out of service.');
-    }
-  }
-
   @Get('download/base64/:filename')
   async downloadImageBase64(
     @Res() res: Response,
@@ -151,6 +136,27 @@ export class CoreapiController {
     const imagedata = await this.coreapiService.getImage(filename);
     if (imagedata) {
       res.status(HttpStatus.OK).send(imagedata);
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('This image out of service.');
+    }
+  }
+
+  @Get('preview/image/:filename')
+  async previewImage(
+    @Res() res: Response,
+    @Param('filename') filename: string,
+  ) {
+    const imagedata = await this.coreapiService.getImage(filename);
+    if (imagedata) {
+      const buffer = Buffer.from(imagedata.image, 'base64');
+      const arrtext = filename.split('.');
+
+      res.header('Content-Type', 'image/' + arrtext[1]);
+      res.header('Content-Length', '');
+      res.header('Access-Control-Allow-Origin', '*');
+      res.send(buffer);
     } else {
       res
         .status(HttpStatus.EXPECTATION_FAILED)
