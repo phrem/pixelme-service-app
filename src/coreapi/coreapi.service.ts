@@ -6,22 +6,23 @@ import { PrismaService } from '../prisma.service';
 @Injectable()
 export class CoreapiService {
   constructor(private prisma: PrismaService) {}
-  async createImage(imagedata: any) {
+
+  // Collection
+
+  async createCollection(collectiondata: any) {
     try {
-      const image = await this.prisma.pixelMeImage.findFirst({
+      const collection = await this.prisma.pixelMeCollection.findFirst({
         where: {
-          fileName: imagedata.fileName,
+          name: collectiondata.name,
         },
       });
-
-      if (image) {
+      if (collection) {
         return false;
       } else {
-        const createimage = await this.prisma.pixelMeImage.create({
+        const createimage = await this.prisma.pixelMeCollection.create({
           data: {
-            fileName: imagedata.fileName,
-            image: imagedata.image,
-            status: imagedata.status,
+            name: collectiondata.name,
+            status: 'ACTIVE',
           },
         });
         return true;
@@ -32,21 +33,133 @@ export class CoreapiService {
     }
   }
 
-  async getImage(filename: string): Promise<any> {
+  async getCollections() {
     try {
-      const image = await this.prisma.pixelMeImage.findFirst({
-        where: {
-          fileName: filename,
-        },
-      });
-      if (image) {
-        return image;
+      const collection = await this.prisma.pixelMeCollection.findMany({});
+      if (collection) {
+        return collection;
       } else {
-        return null;
+        return false;
       }
     } catch (error) {
       console.log(error);
-      return null;
+      return false;
+    }
+  }
+
+  async updateCollection(oldname: string, newname) {
+    try {
+      const collection = await this.prisma.pixelMeCollection.findFirst({
+        where: {
+          name: oldname,
+        },
+      });
+      if (collection) {
+        const updatecollection = await this.prisma.pixelMeCollection.update({
+          where: {
+            id: collection.id,
+          },
+          data: {
+            name: newname,
+          },
+        });
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  async deleteCollection(collectionname: string) {
+    try {
+      const collection = await this.prisma.pixelMeCollection.findFirst({
+        where: {
+          name: collectionname,
+        },
+      });
+      if (collection) {
+        const deletecollection = await this.prisma.pixelMeCollection.delete({
+          where: {
+            id: collection.id,
+          },
+        });
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  // Image
+
+  async createImage(collectionname: string, imagedata: any) {
+    try {
+      const collection = await this.prisma.pixelMeCollection.findFirst({
+        where: {
+          name: collectionname,
+        },
+      });
+      if (collection) {
+        const image = await this.prisma.pixelMeImage.findFirst({
+          where: {
+            fileName: imagedata.fileName,
+          },
+        });
+
+        if (image) {
+          return false;
+        } else {
+          const createimage = await this.prisma.pixelMeImage.create({
+            data: {
+              collectionId: collection.id,
+              fileName: imagedata.fileName,
+              image: imagedata.image,
+              status: imagedata.status,
+            },
+          });
+          return true;
+        }
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  async getImage(collectionname: string, filename: string): Promise<any> {
+    try {
+      const collection = await this.prisma.pixelMeCollection.findFirst({
+        where: {
+          name: collectionname,
+        },
+      });
+      if (collection) {
+        const image = await this.prisma.pixelMeImage.findFirst({
+          where: {
+            collectionId: collection.id,
+            fileName: filename,
+          },
+        });
+
+        if (image) {
+          return image;
+        } else {
+          return null;
+        }
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log(error);
+      return false;
     }
   }
 
@@ -88,18 +201,27 @@ export class CoreapiService {
     }
   }
 
-  async updateImage(imagedata: any) {
+  async updateImage(collectionname: string, imagedata: any) {
     try {
-      const updateimage = await this.prisma.pixelMeImage.update({
+      const collection = await this.prisma.pixelMeCollection.findFirst({
         where: {
-          fileName: imagedata.fileName,
-        },
-        data: {
-          image: imagedata.image,
+          name: collectionname,
         },
       });
-      if (updateimage) {
-        return true;
+      if (collection) {
+        const updateimage = await this.prisma.pixelMeImage.update({
+          where: {
+            fileName: imagedata.fileName,
+          },
+          data: {
+            image: imagedata.image,
+          },
+        });
+        if (updateimage) {
+          return true;
+        } else {
+          return false;
+        }
       } else {
         return false;
       }
@@ -109,15 +231,24 @@ export class CoreapiService {
     }
   }
 
-  async deleteImage(filename: string): Promise<any> {
+  async deleteImage(collectionname: string, filename: string): Promise<any> {
     try {
-      const deleteimage = await this.prisma.pixelMeImage.delete({
+      const collection = await this.prisma.pixelMeCollection.findFirst({
         where: {
-          fileName: filename,
+          name: collectionname,
         },
       });
-      if (deleteimage) {
-        return true;
+      if (collection) {
+        const deleteimage = await this.prisma.pixelMeImage.delete({
+          where: {
+            fileName: filename,
+          },
+        });
+        if (deleteimage) {
+          return true;
+        } else {
+          return false;
+        }
       } else {
         return false;
       }

@@ -10,13 +10,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model PixelMeImage {
+model PixelMeCollection {
   id        Int      @id @default(autoincrement())
-  fileName  String?  @unique
-  image     String?
+  name      String?  @unique
   status    String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  images    PixelMeImage[]
 
-  @@map("pixelMeImage")
+  @@map("collection")
+}
+
+model PixelMeImage {
+  id           Int        @id @default(autoincrement())
+  collectionId Int
+  fileName     String?    @unique
+  image        String?
+  status       String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  collection   PixelMeCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@map("image")
 }

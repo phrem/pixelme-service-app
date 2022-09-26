@@ -12,22 +12,80 @@ import {
   UploadedFile,
   UploadedFiles,
   UseGuards,
-  StreamableFile,
 } from '@nestjs/common';
 import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { CoreapiService } from './coreapi.service';
 import { Response } from 'express';
 import { Express } from 'express';
 import { AuthGuard } from '@nestjs/passport';
-import { threadId } from 'worker_threads';
-import { createReadStream } from 'fs';
-import * as fs from 'fs';
-import * as Jimp from 'jimp';
 
 @Controller('api')
 export class CoreapiController {
   constructor(private readonly coreapiService: CoreapiService) {}
 
+  // --- Collections
+  @Get('collections')
+  @UseGuards(AuthGuard('api-key'))
+  async getCollections(@Res() res: Response) {
+    const collections = await this.coreapiService.getCollections();
+    if (collections) {
+      res.status(HttpStatus.OK).send(collections);
+    } else {
+      res.status(HttpStatus.EXPECTATION_FAILED).send('No collection data.');
+    }
+  }
+
+  @Post('collection')
+  @UseGuards(AuthGuard('api-key'))
+  async createCollection(@Res() res: Response, @Body() collectiondata: any) {
+    const create = await this.coreapiService.createCollection(collectiondata);
+    if (create) {
+      res.status(HttpStatus.OK).send('SUCCESS');
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('This collection already create.');
+    }
+  }
+
+  @Put('collection/oldname/:oldname/newname/:newname')
+  @UseGuards(AuthGuard('api-key'))
+  @UseInterceptors(AnyFilesInterceptor())
+  async updateCollection(
+    @Res() res: Response,
+    @Param('oldname') oldname: string,
+    @Param('newname') newname: string,
+  ) {
+    const update = await this.coreapiService.updateCollection(oldname, newname);
+    if (update) {
+      res.status(HttpStatus.OK).send('SUCCESS');
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('Something wrong please try again.');
+    }
+  }
+
+  @Delete('collection/:collectionname')
+  @UseGuards(AuthGuard('api-key'))
+  @UseInterceptors(AnyFilesInterceptor())
+  async deleteCollection(
+    @Res() res: Response,
+    @Param('collectionname') collectionname: string,
+  ) {
+    const deletecol = await this.coreapiService.deleteCollection(
+      collectionname,
+    );
+    if (deletecol) {
+      res.status(HttpStatus.OK).send('SUCCESS');
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('Something wrong please try again.');
+    }
+  }
+
+  // --- Images
   @Get('all')
   @UseGuards(AuthGuard('api-key'))
   async getAll(@Res() res: Response) {
@@ -61,11 +119,12 @@ export class CoreapiController {
     }
   }
 
-  @Post('upload')
+  @Post('upload/:collectionname')
   @UseGuards(AuthGuard('api-key'))
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @Res() res: Response,
+    @Param('collectionname') collectionname: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const imagedata = {
@@ -75,7 +134,10 @@ export class CoreapiController {
     };
 
     // console.log(file);
-    const create = await this.coreapiService.createImage(imagedata);
+    const create = await this.coreapiService.createImage(
+      collectionname,
+      imagedata,
+    );
     if (create) {
       res.status(HttpStatus.OK).send('SUCCESS');
     } else {
@@ -83,11 +145,12 @@ export class CoreapiController {
     }
   }
 
-  @Post('upload/multiple')
+  @Post('upload/multiple/:collectionname')
   @UseGuards(AuthGuard('api-key'))
   @UseInterceptors(AnyFilesInterceptor())
   async uploadFiles(
     @Res() res: Response,
+    @Param('collectionname') collectionname: string,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
     const rescreate = [];
@@ -97,7 +160,10 @@ export class CoreapiController {
         image: files[0].buffer.toString('base64'),
         status: 'ACTIVE',
       };
-      const create = await this.coreapiService.createImage(imagedata);
+      const create = await this.coreapiService.createImage(
+        collectionname,
+        imagedata,
+      );
       const result = {
         fileName: files[i].originalname,
         status: '',
@@ -112,12 +178,16 @@ export class CoreapiController {
     res.status(HttpStatus.OK).send(rescreate);
   }
 
-  @Get('download/:filename')
+  @Get('download/:collectionname/:filename')
   async downloadImage(
     @Res() res: Response,
+    @Param('collectionname') collectionname: string,
     @Param('filename') filename: string,
   ) {
-    const imagedata = await this.coreapiService.getImage(filename);
+    const imagedata = await this.coreapiService.getImage(
+      collectionname,
+      filename,
+    );
     if (imagedata) {
       const buffer = Buffer.from(imagedata.image, 'base64');
       res.send(buffer);
@@ -128,12 +198,16 @@ export class CoreapiController {
     }
   }
 
-  @Get('download/base64/:filename')
+  @Get('download/base64/:collectionname/:filename')
   async downloadImageBase64(
     @Res() res: Response,
+    @Param('collectionname') collectionname: string,
     @Param('filename') filename: string,
   ) {
-    const imagedata = await this.coreapiService.getImage(filename);
+    const imagedata = await this.coreapiService.getImage(
+      collectionname,
+      filename,
+    );
     if (imagedata) {
       res.status(HttpStatus.OK).send(imagedata);
     } else {
@@ -143,12 +217,16 @@ export class CoreapiController {
     }
   }
 
-  @Get('preview/image/:filename')
+  @Get('preview/image/:collectionname/:filename')
   async previewImage(
     @Res() res: Response,
+    @Param('collectionname') collectionname: string,
     @Param('filename') filename: string,
   ) {
-    const imagedata = await this.coreapiService.getImage(filename);
+    const imagedata = await this.coreapiService.getImage(
+      collectionname,
+      filename,
+    );
     if (imagedata) {
       const buffer = Buffer.from(imagedata.image, 'base64');
       const arrtext = filename.split('.');
@@ -164,10 +242,17 @@ export class CoreapiController {
     }
   }
 
-  @Delete('delete/image/:filename')
+  @Delete('delete/image/:collectionname/:filename')
   @UseGuards(AuthGuard('api-key'))
-  async deleteFile(@Res() res: Response, @Param('filename') filename: string) {
-    const deleteimage = await this.coreapiService.deleteImage(filename);
+  async deleteFile(
+    @Res() res: Response,
+    @Param('collectionname') collectionname: string,
+    @Param('filename') filename: string,
+  ) {
+    const deleteimage = await this.coreapiService.deleteImage(
+      collectionname,
+      filename,
+    );
     if (deleteimage) {
       res.status(HttpStatus.OK).send('SUCCESS');
     } else {
@@ -177,12 +262,19 @@ export class CoreapiController {
     }
   }
 
-  @Delete('delete/multiple')
+  @Delete('delete/multiple/:collectionname')
   @UseGuards(AuthGuard('api-key'))
-  async deleteFiles(@Res() res: Response, @Body() images: any) {
+  async deleteFiles(
+    @Res() res: Response,
+    @Param('collectionname') collectionname: string,
+    @Body() images: any,
+  ) {
     const resdelete = [];
     for (const i in images.data) {
-      const deleteimage = await this.coreapiService.deleteImage(images.data[i]);
+      const deleteimage = await this.coreapiService.deleteImage(
+        collectionname,
+        images.data[i],
+      );
       const result = {
         fileName: images.data[i],
         status: '',
@@ -210,11 +302,12 @@ export class CoreapiController {
     }
   }
 
-  @Put('update')
-  // @UseGuards(AuthGuard('api-key'))
+  @Put('update/:collectionname')
+  @UseGuards(AuthGuard('api-key'))
   @UseInterceptors(FileInterceptor('file'))
   async updateFile(
     @Res() res: Response,
+    @Param('collectionname') collectionname: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const imagedata = {
@@ -223,7 +316,10 @@ export class CoreapiController {
       status: 'ACTIVE',
     };
 
-    const update = await this.coreapiService.updateImage(imagedata);
+    const update = await this.coreapiService.updateImage(
+      collectionname,
+      imagedata,
+    );
     if (update) {
       res.status(HttpStatus.OK).send('SUCCESS');
     } else {
@@ -233,11 +329,12 @@ export class CoreapiController {
     }
   }
 
-  @Put('update/multiple')
+  @Put('update/multiple/:collectionname')
   @UseGuards(AuthGuard('api-key'))
   @UseInterceptors(AnyFilesInterceptor())
   async updateFiles(
     @Res() res: Response,
+    @Param('collectionname') collectionname: string,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
     const resupdate = [];
@@ -247,7 +344,10 @@ export class CoreapiController {
         image: files[0].buffer.toString('base64'),
         status: 'ACTIVE',
       };
-      const create = await this.coreapiService.updateImage(imagedata);
+      const create = await this.coreapiService.updateImage(
+        collectionname,
+        imagedata,
+      );
       const result = {
         fileName: files[i].originalname,
         status: '',
