@@ -11,11 +11,7 @@ export class CoreapiService {
 
   async createCollection(collectiondata: any) {
     try {
-      const collection = await this.prisma.pixelMeCollection.findFirst({
-        where: {
-          name: collectiondata.name,
-        },
-      });
+      const collection = await this.getCollectionId(collectiondata.name);
       if (collection) {
         return false;
       } else {
@@ -49,11 +45,7 @@ export class CoreapiService {
 
   async updateCollection(oldname: string, newname) {
     try {
-      const collection = await this.prisma.pixelMeCollection.findFirst({
-        where: {
-          name: oldname,
-        },
-      });
+      const collection = await this.getCollectionId(oldname);
       if (collection) {
         const updatecollection = await this.prisma.pixelMeCollection.update({
           where: {
@@ -75,11 +67,7 @@ export class CoreapiService {
 
   async deleteCollection(collectionname: string) {
     try {
-      const collection = await this.prisma.pixelMeCollection.findFirst({
-        where: {
-          name: collectionname,
-        },
-      });
+      const collection = await this.getCollectionId(collectionname);
       if (collection) {
         const deletecollection = await this.prisma.pixelMeCollection.delete({
           where: {
@@ -100,18 +88,9 @@ export class CoreapiService {
 
   async createImage(collectionname: string, imagedata: any) {
     try {
-      const collection = await this.prisma.pixelMeCollection.findFirst({
-        where: {
-          name: collectionname,
-        },
-      });
+      const collection = await this.getCollectionId(collectionname);
       if (collection) {
-        const image = await this.prisma.pixelMeImage.findFirst({
-          where: {
-            fileName: imagedata.fileName,
-          },
-        });
-
+        const image = await this.getImageId(collection.id, imagedata.fileName);
         if (image) {
           return false;
         } else {
@@ -136,19 +115,9 @@ export class CoreapiService {
 
   async getImage(collectionname: string, filename: string): Promise<any> {
     try {
-      const collection = await this.prisma.pixelMeCollection.findFirst({
-        where: {
-          name: collectionname,
-        },
-      });
+      const collection = await this.getCollectionId(collectionname);
       if (collection) {
-        const image = await this.prisma.pixelMeImage.findFirst({
-          where: {
-            collectionId: collection.id,
-            fileName: filename,
-          },
-        });
-
+        const image = await this.getImageId(collection.id, filename);
         if (image) {
           return image;
         } else {
@@ -168,6 +137,9 @@ export class CoreapiService {
       const images = await this.prisma.pixelMeImage.findMany({
         orderBy: {
           createdAt: 'asc',
+        },
+        include: {
+          collection: true,
         },
       });
       if (images) {
@@ -189,6 +161,9 @@ export class CoreapiService {
         orderBy: {
           createdAt: 'asc',
         },
+        include: {
+          collection: true,
+        },
       });
       if (images) {
         return images;
@@ -203,15 +178,12 @@ export class CoreapiService {
 
   async updateImage(collectionname: string, imagedata: any) {
     try {
-      const collection = await this.prisma.pixelMeCollection.findFirst({
-        where: {
-          name: collectionname,
-        },
-      });
+      const collection = await this.getCollectionId(collectionname);
       if (collection) {
+        const image = await this.getImageId(collection.id, imagedata.fileName);
         const updateimage = await this.prisma.pixelMeImage.update({
           where: {
-            fileName: imagedata.fileName,
+            id: image.id,
           },
           data: {
             image: imagedata.image,
@@ -233,15 +205,12 @@ export class CoreapiService {
 
   async deleteImage(collectionname: string, filename: string): Promise<any> {
     try {
-      const collection = await this.prisma.pixelMeCollection.findFirst({
-        where: {
-          name: collectionname,
-        },
-      });
+      const collection = await this.getCollectionId(collectionname);
       if (collection) {
+        const image = await this.getImageId(collection.id, filename);
         const deleteimage = await this.prisma.pixelMeImage.delete({
           where: {
-            fileName: filename,
+            id: image.id,
           },
         });
         if (deleteimage) {
@@ -270,5 +239,24 @@ export class CoreapiService {
       console.log(error);
       return false;
     }
+  }
+
+  async getCollectionId(collectionname: string): Promise<any> {
+    const collection = await this.prisma.pixelMeCollection.findFirst({
+      where: {
+        name: collectionname,
+      },
+    });
+    return collection ? collection : false;
+  }
+
+  async getImageId(collectionid: any, filename: string): Promise<any> {
+    const image = await this.prisma.pixelMeImage.findFirst({
+      where: {
+        collectionId: collectionid,
+        fileName: filename,
+      },
+    });
+    return image ? image : false;
   }
 }
