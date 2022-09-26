@@ -124,6 +124,25 @@ export class CoreapiController {
     }
   }
 
+  @Get('image/:filename')
+  async previewImage(
+    @Res() res: Response,
+    @Param('filename') filename: string,
+  ) {
+    const imagedata = await this.coreapiService.getImage(filename);
+    if (imagedata) {
+      const buffer = Buffer.from(imagedata.image, 'base64');
+
+      const base64Image =
+        'data:' + res.header['content-type'] + ';base64,' + buffer;
+      res.send(base64Image);
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('This image out of service.');
+    }
+  }
+
   @Get('download/base64/:filename')
   async downloadImageBase64(
     @Res() res: Response,
