@@ -210,36 +210,25 @@ export class CoreapiService {
         const image = await this.getImageId(collection.id, filename);
         console.log(image);
         const deleteimage = await this.prisma.pixelMeImage.delete({
-          // where: {
-          //   id: image.id,
-          // },
-          // where: {
-          //   id: {
-          //     equals: parseInt(image.id),
-          //   },
-          //   fileName: {
-          //     equals: image.fileName,
-          //   },
           where: {
-            AND: [{ id: image.id }, { fileName: image.fileName }],
+            id: image.id,
           },
+          // where: {
+          //   OR: [
+          //     {
+          //       id: {
+          //         equals: image.id,
+          //       },
+          //     },
+          //     {
+          //       OR: {
+          //         fileName: {
+          //           equals: image.fileName,
+          //         },
+          //       },
+          //     },
+          //   ],
           // },
-          where: {
-            OR: [
-              {
-                id: {
-                  equals: image.id,
-                },
-              },
-              {
-                OR: {
-                  fileName: {
-                    equals: image.fileName,
-                  },
-                },
-              },
-            ],
-          },
         });
         if (deleteimage) {
           return true;
