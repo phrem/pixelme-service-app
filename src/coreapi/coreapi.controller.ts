@@ -22,7 +22,7 @@ import { AuthGuard } from '@nestjs/passport';
 @Controller('api')
 export class CoreapiController {
   constructor(private readonly coreapiService: CoreapiService) {
-    this.imageUpdateURL()
+    // this.imageUpdateURL()
   }
 
   async imageUpdateURL() {
