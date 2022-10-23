@@ -21,7 +21,9 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Controller('api')
 export class CoreapiController {
-  constructor(private readonly coreapiService: CoreapiService) {}
+  constructor(private readonly coreapiService: CoreapiService) {
+    this.imageUpdateURL()
+  }
 
   async imageUpdateURL() {
     const images = await this.coreapiService.getAll();
@@ -249,7 +251,7 @@ export class CoreapiController {
     }
   }
 
-  @Get('image/:collectionname/:filename')
+  @Get('image/collection/:collectionname/name/:filename')
   async viewImage(
     @Res() res: Response,
     @Param('collectionname') collectionname: string,

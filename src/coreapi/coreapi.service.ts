@@ -101,9 +101,9 @@ export class CoreapiService {
               image: imagedata.image,
               imageURL:
                 process.env.SERVER_ENDPOINT +
-                '/api/image/' +
+                '/api/image/collection/' +
                 collectionname +
-                '/' +
+                '/name/' +
                 imagedata.fileName,
               status: imagedata.status,
             },
@@ -229,9 +229,9 @@ export class CoreapiService {
         data: {
           imageURL:
             process.env.SERVER_ENDPOINT +
-            '/api/image/' +
+            '/api/image/collection/' +
             imagedata.collection.name +
-            '/' +
+            '/name/' +
             imagedata.fileName,
         },
       });
