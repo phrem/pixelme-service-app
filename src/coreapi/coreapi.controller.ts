@@ -23,6 +23,13 @@ import { AuthGuard } from '@nestjs/passport';
 export class CoreapiController {
   constructor(private readonly coreapiService: CoreapiService) {}
 
+  async imageUpdateURL() {
+    const images = await this.coreapiService.getAll();
+    for (const i in images) {
+      const update = await this.coreapiService.updateImageURL(images[i]);
+    }
+    console.log('Update Complete...');
+  }
   // --- Collections
   @Get('collections')
   @UseGuards(AuthGuard('api-key'))
@@ -219,6 +226,31 @@ export class CoreapiController {
 
   @Get('preview/image/:collectionname/:filename')
   async previewImage(
+    @Res() res: Response,
+    @Param('collectionname') collectionname: string,
+    @Param('filename') filename: string,
+  ) {
+    const imagedata = await this.coreapiService.getImage(
+      collectionname,
+      filename,
+    );
+    if (imagedata) {
+      const buffer = Buffer.from(imagedata.image, 'base64');
+      const arrtext = filename.split('.');
+
+      res.header('Content-Type', 'image/' + arrtext[1]);
+      res.header('Content-Length', '');
+      res.header('Access-Control-Allow-Origin', '*');
+      res.send(buffer);
+    } else {
+      res
+        .status(HttpStatus.EXPECTATION_FAILED)
+        .send('This image out of service.');
+    }
+  }
+
+  @Get('image/:collectionname/:filename')
+  async viewImage(
     @Res() res: Response,
     @Param('collectionname') collectionname: string,
     @Param('filename') filename: string,

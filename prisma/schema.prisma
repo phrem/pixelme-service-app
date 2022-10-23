@@ -11,24 +11,25 @@ datasource db {
 }
 
 model PixelMeCollection {
-  id        Int      @id @default(autoincrement())
-  name      String?  @unique
+  id        Int            @id @default(autoincrement())
+  name      String?        @unique
   status    String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
   images    PixelMeImage[]
 
   @@map("collection")
 }
 
 model PixelMeImage {
-  id           Int        @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   collectionId Int
-  fileName     String     
+  fileName     String
   image        String?
+  imageURL     String?
   status       String?
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
   collection   PixelMeCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   @@map("image")

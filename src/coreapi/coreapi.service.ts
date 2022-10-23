@@ -99,6 +99,12 @@ export class CoreapiService {
               collectionId: collection.id,
               fileName: imagedata.fileName,
               image: imagedata.image,
+              imageURL:
+                process.env.SERVER_ENDPOINT +
+                '/api/image/' +
+                collectionname +
+                '/' +
+                imagedata.fileName,
               status: imagedata.status,
             },
           });
@@ -138,7 +144,12 @@ export class CoreapiService {
         orderBy: {
           createdAt: 'asc',
         },
-        include: {
+        select: {
+          id: true,
+          fileName: true,
+          imageURL: true,
+          createdAt: true,
+          updatedAt: true,
           collection: true,
         },
       });
@@ -161,7 +172,12 @@ export class CoreapiService {
         orderBy: {
           createdAt: 'asc',
         },
-        include: {
+        select: {
+          id: true,
+          fileName: true,
+          imageURL: true,
+          createdAt: true,
+          updatedAt: true,
           collection: true,
         },
       });
@@ -195,6 +211,32 @@ export class CoreapiService {
         } else {
           return false;
         }
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  async updateImageURL(imagedata: any) {
+    try {
+      const updateimage = await this.prisma.pixelMeImage.update({
+        where: {
+          id: imagedata.id,
+        },
+        data: {
+          imageURL:
+            process.env.SERVER_ENDPOINT +
+            '/api/image/' +
+            imagedata.collection.name +
+            '/' +
+            imagedata.fileName,
+        },
+      });
+      if (updateimage) {
+        return true;
       } else {
         return false;
       }
